@@ -6,7 +6,7 @@ public class Locator
 
     public Locator(string value)
     {
-        Value = value.ToUpper();
+        Value = (value ?? throw new ArgumentNullException(nameof(value))).ToUpper();
         Centre = MaidenheadLocator.LocatorToLatLng(this);
         BoundingBox = GetBoundingBox(Value, Centre);
     }

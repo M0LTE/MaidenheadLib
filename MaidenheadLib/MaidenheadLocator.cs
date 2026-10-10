@@ -103,6 +103,16 @@ public static partial class MaidenheadLocator
 		lat = Math.IEEERemainder(lat, 1);
 		if (lat < 0) lat += 1;
 
+		// lon and lat are now the position within the 4-character square, in the range
+		// [0, 2) and [0, 1) respectively. The square's centre is at (1, 0.5). A caller who
+		// round-trips the exact centre of a 4-character square through LocatorToLatLng and
+		// back should get the same 4-character locator back, since that's the one point in
+		// the square that LocatorToLatLng itself returns. Everywhere else in the "mm"
+		// subsquare, a caller asking for extraPrecision 0 should still get 6 characters.
+		bool isExactSquareCentre = extraPrecision == 0
+			&& Math.Abs(lon - 1.0) < 1e-9
+			&& Math.Abs(lat - 0.5) < 1e-9;
+
 		locator += (char)('a' + Math.Floor(lon * 12));
 		locator += (char)('a' + Math.Floor(lat * 24));
 		lon = Math.IEEERemainder(lon, (double)1 / 12);
@@ -126,10 +136,10 @@ public static partial class MaidenheadLocator
 			locator += (char)('a' + Math.Floor(lat * 240 * 24));
 		}
 
-		if (locator.Length == 6 && locator[4] == 'm' && locator[5] == 'm')
+		if (isExactSquareCentre)
 		{
 			return locator[..4];
-        }
+		}
 
 		return locator;
 	}
