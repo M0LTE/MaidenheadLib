@@ -81,10 +81,15 @@ public static partial class MaidenheadLocator
 	/// <param name="lat">Latitude to convert</param>
 	/// <param name="lon">Longitude to convert</param>
 	/// <param name="extraPrecision">Extra precision (0, 1, 2)</param>
-	/// <returns>Locator string</returns>
+	/// <returns>Locator string: always 6 characters, plus 2 for each step of extra precision</returns>
 	public static string LatLngToLocator(double lat, double lon, int extraPrecision)
 	{
 		string locator = "";
+
+		// The north pole and the antimeridian sit on the far edge of the grid; keep them in
+		// the last field (R) rather than running past it.
+		lat = Math.Min(lat, 90 - 1e-9);
+		lon = Math.Min(lon, 180 - 1e-9);
 
 		lat += 90;
 		lon += 180;
@@ -102,16 +107,6 @@ public static partial class MaidenheadLocator
 		if (lon < 0) lon += 2;
 		lat = Math.IEEERemainder(lat, 1);
 		if (lat < 0) lat += 1;
-
-		// lon and lat are now the position within the 4-character square, in the range
-		// [0, 2) and [0, 1) respectively. The square's centre is at (1, 0.5). A caller who
-		// round-trips the exact centre of a 4-character square through LocatorToLatLng and
-		// back should get the same 4-character locator back, since that's the one point in
-		// the square that LocatorToLatLng itself returns. Everywhere else in the "mm"
-		// subsquare, a caller asking for extraPrecision 0 should still get 6 characters.
-		bool isExactSquareCentre = extraPrecision == 0
-			&& Math.Abs(lon - 1.0) < 1e-9
-			&& Math.Abs(lat - 0.5) < 1e-9;
 
 		locator += (char)('a' + Math.Floor(lon * 12));
 		locator += (char)('a' + Math.Floor(lat * 24));
@@ -134,11 +129,6 @@ public static partial class MaidenheadLocator
 		{
 			locator += (char)('a' + Math.Floor(lon * 120 * 24));
 			locator += (char)('a' + Math.Floor(lat * 240 * 24));
-		}
-
-		if (isExactSquareCentre)
-		{
-			return locator[..4];
 		}
 
 		return locator;
