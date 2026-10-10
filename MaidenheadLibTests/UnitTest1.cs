@@ -64,10 +64,10 @@ public class UnitTest1
     }
 
     [Fact]
-    public void LatLonToFourChar_1() => MaidenheadLocator.LatLngToLocator(51.5, -1.0).Should().Be("IO91");
+    public void LatLonToSixChar_CentreOfIo91() => MaidenheadLocator.LatLngToLocator(51.5, -1.0).Should().Be("IO91mm");
 
     [Fact]
-    public void LatLonToFourChar_2() => MaidenheadLocator.LatLngToLocator(52.5, -3.0).Should().Be("IO82");
+    public void LatLonToSixChar_CentreOfIo82() => MaidenheadLocator.LatLngToLocator(52.5, -3.0).Should().Be("IO82mm");
 
     [Fact]
     public void LatLonToSixChar() => MaidenheadLocator.LatLngToLocator(51.4375, -1.0417).Should().Be("IO91lk");
@@ -101,15 +101,21 @@ public class UnitTest1
     }
 
     [Fact]
-    public void LatLonToFourChar_CentreOfSquareRoundTrips()
+    public void LatLonToSixChar_CentreOfASquare_IsStillSixCharacters()
     {
-        // The centre of a 4-character square round-trips back to the same 4-character
-        // locator, because that centre is the one point LocatorToLatLng returns for that
-        // locator. This is the behaviour the old "mm" special case was protecting, kept here
-        // for exactly the centre point rather than the whole "mm" subsquare.
+        // A caller always gets the length they asked for, even at the exact centre of a
+        // 4-character square, where the subsquare is "mm".
         var (lat, lon) = MaidenheadLocator.LocatorToLatLng("IO91");
-        MaidenheadLocator.LatLngToLocator(lat, lon, 0).Should().Be("IO91");
+        MaidenheadLocator.LatLngToLocator(lat, lon, 0).Should().Be("IO91mm");
     }
+
+    [Theory]
+    [InlineData(90, 180, "RR99xx")]
+    [InlineData(90, 0, "JR09ax")]
+    [InlineData(0, 180, "RJ90xa")]
+    [InlineData(-90, -180, "AA00aa")]
+    public void LatLonToSixChar_AtTheEdgesOfTheGrid_StaysInsideIt(double lat, double lon, string expected) =>
+        MaidenheadLocator.LatLngToLocator(lat, lon).Should().Be(expected);
 
     [Fact]
     public void LocatorConstructor_NullValue_ThrowsArgumentNullException()
