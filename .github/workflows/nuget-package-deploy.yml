@@ -35,4 +35,4 @@ jobs:
               --api-key "$NUGET_API_KEY"
               --source https://api.nuget.org/v3/index.json
               --skip-duplicate
-              -n 1
+              --no-symbols
