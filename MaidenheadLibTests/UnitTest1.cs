@@ -1,3 +1,4 @@
+using System;
 using FluentAssertions;
 using MaidenheadLib;
 using Xunit;
@@ -73,4 +74,56 @@ public class UnitTest1
 
     [Fact]
     public void LatLonToEightChar() => MaidenheadLocator.LatLngToLocator(51.4375, -1.0417, 1).Should().Be("IO91lk45");
+
+    [Fact]
+    public void LatLonToSixChar_MmSubsquareNotAtCentre_StillReturnsSixChars()
+    {
+        // https://github.com/M0LTE/MaidenheadLib/issues/1 - this point's subsquare is "mm" but
+        // it is not the exact centre of AA24, so a caller asking for precision 0 should still
+        // get all six characters.
+        MaidenheadLocator.LatLngToLocator(-85.46, -174.98, 0).Should().Be("AA24mm");
+    }
+
+    [Fact]
+    public void LatLonToSixChar_RandomSweep_AlwaysReturnsSixCharsAtPrecisionZero()
+    {
+        var random = new Random(12345);
+
+        for (var i = 0; i < 100_000; i++)
+        {
+            var lat = random.NextDouble() * 180 - 90;
+            var lon = random.NextDouble() * 360 - 180;
+
+            var locator = MaidenheadLocator.LatLngToLocator(lat, lon, 0);
+
+            locator.Should().HaveLength(6, "lat {0}, lon {1} should round to six characters", lat, lon);
+        }
+    }
+
+    [Fact]
+    public void LatLonToFourChar_CentreOfSquareRoundTrips()
+    {
+        // The centre of a 4-character square round-trips back to the same 4-character
+        // locator, because that centre is the one point LocatorToLatLng returns for that
+        // locator. This is the behaviour the old "mm" special case was protecting, kept here
+        // for exactly the centre point rather than the whole "mm" subsquare.
+        var (lat, lon) = MaidenheadLocator.LocatorToLatLng("IO91");
+        MaidenheadLocator.LatLngToLocator(lat, lon, 0).Should().Be("IO91");
+    }
+
+    [Fact]
+    public void LocatorConstructor_NullValue_ThrowsArgumentNullException()
+    {
+        string value = null;
+        var act = () => new Locator(value);
+        act.Should().Throw<ArgumentNullException>().And.ParamName.Should().Be("value");
+    }
+
+    [Fact]
+    public void LocatorImplicitConversion_NullValue_ThrowsArgumentNullException()
+    {
+        string value = null;
+        var act = () => { Locator locator = value; };
+        act.Should().Throw<ArgumentNullException>().And.ParamName.Should().Be("value");
+    }
 }
